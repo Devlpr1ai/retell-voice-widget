@@ -8,10 +8,6 @@
  *     RetellWidget.init({ serverUrl: "https://your-server.com", agentId: "agent_xxx" });
  *   </script>
  */
-// DEBUG: remove after confirming SDK exports
-console.log('SDK keys:', Object.keys(window).filter(k => k.toLowerCase().includes('retell')));
-console.log('retellClientJsSdk:', typeof window.retellClientJsSdk, window.retellClientJsSdk);
-
 (function () {
   "use strict";
 
