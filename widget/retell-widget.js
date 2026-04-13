@@ -66,74 +66,52 @@ function initWidget() {
   var isConnecting = false;
   var config = {};
 
-  // ── DOM ────────────────────────────────────────────────────────────
-  function injectStyles() {
-    var css =
-      "#retell-widget-fab {" +
-      "  position: fixed; bottom: 24px; right: 24px;" +
-      "  width: 60px; height: 60px; border-radius: 50%; border: none;" +
-      "  cursor: pointer; background: #4F46E5; color: #fff;" +
-      "  box-shadow: 0 4px 14px rgba(79,70,229,0.4);" +
-      "  display: flex; align-items: center; justify-content: center;" +
-      "  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;" +
-      "  z-index: 99999;" +
-      "}" +
-      "#retell-widget-fab:hover {" +
-      "  transform: scale(1.08);" +
-      "  box-shadow: 0 6px 20px rgba(79,70,229,0.5);" +
-      "}" +
-      "#retell-widget-fab.active {" +
-      "  background: #DC2626;" +
-      "  box-shadow: 0 4px 14px rgba(220,38,38,0.4);" +
-      "}" +
-      "#retell-widget-fab.active:hover {" +
-      "  box-shadow: 0 6px 20px rgba(220,38,38,0.5);" +
-      "}" +
-      "#retell-widget-fab.connecting {" +
-      "  background: #F59E0B;" +
-      "  box-shadow: 0 4px 14px rgba(245,158,11,0.4);" +
-      "  pointer-events: none;" +
-      "}" +
-      "#retell-widget-fab.active::after {" +
-      "  content: ''; position: absolute;" +
-      "  width: 60px; height: 60px; border-radius: 50%;" +
-      "  border: 3px solid #DC2626;" +
-      "  animation: retell-pulse 1.5s ease-out infinite;" +
-      "}" +
-      "@keyframes retell-pulse {" +
-      "  0%   { transform: scale(1);   opacity: 0.6; }" +
-      "  100% { transform: scale(1.6); opacity: 0; }" +
-      "}" +
-      "#retell-widget-status {" +
-      "  position: fixed; bottom: 92px; right: 24px;" +
-      "  background: #1F2937; color: #fff;" +
-      "  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" +
-      "  font-size: 13px; padding: 8px 14px; border-radius: 8px;" +
-      "  box-shadow: 0 2px 10px rgba(0,0,0,0.15);" +
-      "  z-index: 99999; opacity: 0; transform: translateY(6px);" +
-      "  transition: opacity 0.25s, transform 0.25s;" +
-      "  pointer-events: none;" +
-      "}" +
-      "#retell-widget-status.visible {" +
-      "  opacity: 1; transform: translateY(0);" +
-      "}";
+  // ── Inline styles (all !important to survive host CSS) ──────────
+  var FAB_BASE_STYLE = 'position:fixed !important; bottom:24px !important; right:24px !important; ' +
+    'z-index:2147483647 !important; width:60px !important; height:60px !important; ' +
+    'border-radius:50% !important; background:#6C63FF !important; border:none !important; ' +
+    'cursor:pointer !important; display:flex !important; align-items:center !important; ' +
+    'justify-content:center !important; color:#fff !important; ' +
+    'box-shadow:0 4px 14px rgba(108,99,255,0.4) !important; ' +
+    'transition:background 0.2s,transform 0.15s,box-shadow 0.2s !important; ' +
+    'padding:0 !important; margin:0 !important; opacity:1 !important; ' +
+    'visibility:visible !important; pointer-events:auto !important;';
 
+  var STATUS_BASE_STYLE = 'position:fixed !important; bottom:92px !important; right:24px !important; ' +
+    'z-index:2147483647 !important; background:#1F2937 !important; color:#fff !important; ' +
+    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif !important; ' +
+    'font-size:13px !important; padding:8px 14px !important; border-radius:8px !important; ' +
+    'box-shadow:0 2px 10px rgba(0,0,0,0.15) !important; ' +
+    'opacity:0 !important; transform:translateY(6px) !important; ' +
+    'transition:opacity 0.25s,transform 0.25s !important; pointer-events:none !important;';
+
+  // Keyframes still need a <style> tag — inject minimal one
+  function injectKeyframes() {
     var style = document.createElement("style");
-    style.textContent = css;
+    style.textContent =
+      "@keyframes retell-pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.6);opacity:0}}" +
+      "@keyframes retell-spin{to{transform:rotate(360deg)}}";
     document.head.appendChild(style);
   }
 
-  function createDOM() {
-    var fab = document.createElement("button");
-    fab.id = "retell-widget-fab";
-    fab.title = "Start voice call";
-    fab.innerHTML = micIcon();
-    fab.addEventListener("click", handleFabClick);
-    document.body.appendChild(fab);
+  // ── DOM ────────────────────────────────────────────────────────────
+  var fabEl, statusEl;
 
-    var status = document.createElement("div");
-    status.id = "retell-widget-status";
-    document.body.appendChild(status);
+  function createDOM() {
+    injectKeyframes();
+
+    fabEl = document.createElement("button");
+    fabEl.id = "retell-widget-fab";
+    fabEl.title = "Start voice call";
+    fabEl.style.cssText = FAB_BASE_STYLE;
+    fabEl.innerHTML = micIcon();
+    fabEl.addEventListener("click", handleFabClick);
+    document.body.appendChild(fabEl);
+
+    statusEl = document.createElement("div");
+    statusEl.id = "retell-widget-status";
+    statusEl.style.cssText = STATUS_BASE_STYLE;
+    document.body.appendChild(statusEl);
   }
 
   // ── Icons (inline SVG) ────────────────────────────────────────────
@@ -165,33 +143,34 @@ function initWidget() {
 
   // ── Status helpers ─────────────────────────────────────────────────
   function showStatus(text, duration) {
-    var el = document.getElementById("retell-widget-status");
-    el.textContent = text;
-    el.classList.add("visible");
+    statusEl.textContent = text;
+    statusEl.style.opacity = "1";
+    statusEl.style.transform = "translateY(0)";
     if (duration) {
-      setTimeout(function () { el.classList.remove("visible"); }, duration);
+      setTimeout(function () { hideStatus(); }, duration);
     }
   }
 
   function hideStatus() {
-    document.getElementById("retell-widget-status").classList.remove("visible");
+    statusEl.style.opacity = "0";
+    statusEl.style.transform = "translateY(6px)";
   }
 
   function setFabState(state) {
-    var fab = document.getElementById("retell-widget-fab");
-    fab.classList.remove("active", "connecting");
-
     if (state === "active") {
-      fab.classList.add("active");
-      fab.innerHTML = phoneOffIcon();
-      fab.title = "End call";
+      fabEl.style.cssText = FAB_BASE_STYLE +
+        'background:#DC2626 !important; box-shadow:0 4px 14px rgba(220,38,38,0.4) !important;';
+      fabEl.innerHTML = phoneOffIcon();
+      fabEl.title = "End call";
     } else if (state === "connecting") {
-      fab.classList.add("connecting");
-      fab.innerHTML = spinnerIcon();
-      fab.title = "Connecting\u2026";
+      fabEl.style.cssText = FAB_BASE_STYLE +
+        'background:#F59E0B !important; box-shadow:0 4px 14px rgba(245,158,11,0.4) !important; pointer-events:none !important;';
+      fabEl.innerHTML = spinnerIcon();
+      fabEl.title = "Connecting\u2026";
     } else {
-      fab.innerHTML = micIcon();
-      fab.title = "Start voice call";
+      fabEl.style.cssText = FAB_BASE_STYLE;
+      fabEl.innerHTML = micIcon();
+      fabEl.title = "Start voice call";
     }
   }
 
@@ -296,7 +275,6 @@ function initWidget() {
         return;
       }
       config = opts;
-      injectStyles();
       createDOM();
     },
     start: startCall,
