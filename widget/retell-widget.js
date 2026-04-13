@@ -39,7 +39,14 @@
 
     // Now load Retell SDK itself
     loadScript(retellSrc, function () {
-      initWidget();
+      // Wait for both SDK and DOM to be ready
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+          initWidget();
+        });
+      } else {
+        initWidget();
+      }
     });
   }
 
@@ -296,9 +303,11 @@ function initWidget() {
     stop: stopCall,
   };
 
-  // If init was called before SDK loaded, process the queued config
-  if (window._retellWidgetPendingOpts) {
-    window.RetellWidget.init(window._retellWidgetPendingOpts);
-    delete window._retellWidgetPendingOpts;
-  }
+  // Check for queued config — use setTimeout to let inline scripts run first
+  setTimeout(function () {
+    if (window._retellWidgetPendingOpts) {
+      window.RetellWidget.init(window._retellWidgetPendingOpts);
+      delete window._retellWidgetPendingOpts;
+    }
+  }, 0);
 }
