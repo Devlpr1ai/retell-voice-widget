@@ -200,7 +200,11 @@
       const { access_token } = await res.json();
 
       // 2. Start WebRTC call via Retell SDK
-      retellClient = new RetellWebClient();
+      var SDK = window.retellClientJsSdk;
+      if (!SDK || !SDK.RetellWebClient) {
+        throw new Error("Retell SDK not loaded — check script tag");
+      }
+      retellClient = new SDK.RetellWebClient();
 
       retellClient.on("call_started", () => {
         isCallActive = true;
