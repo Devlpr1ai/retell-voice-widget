@@ -27,14 +27,12 @@
     <p>Click the microphone button in the bottom-right corner to start a call.</p>
   </div>
 
-  <!-- Widget loads all SDK deps dynamically — single script is all you need -->
   <script src="retell-widget.js"></script>
   <script>
-    // Queue init config — the widget will apply it once the SDK finishes loading
-    window._retellWidgetPendingOpts = {
+    RetellWidget.init({
       agentId: "agent_9b19fe31c775d0e630be679b4d",
       useNetlify: true,
-    };
+    });
   </script>
 </body>
 </html>

@@ -1,69 +1,20 @@
 /**
  * Retell Voice Agent — Embeddable Widget (self-contained)
  *
- * Usage — just two lines, no extra script tags needed:
+ * Usage:
  *   <script src="retell-widget.js"></script>
  *   <script>
  *     RetellWidget.init({ agentId: "agent_xxx", useNetlify: true });
  *   </script>
  */
-
-// ── Dynamic SDK loader ───────────────────────────────────────────────
-// Loads eventemitter3 → livekit-client → retell SDK, then boots widget
 (function () {
-  var scripts = [
-    "https://unpkg.com/eventemitter3@5.0.4/dist/eventemitter3.umd.js",
-    "https://unpkg.com/livekit-client@2.18.1/dist/livekit-client.umd.js",
-  ];
-  var retellSrc = "https://unpkg.com/retell-client-js-sdk@2.0.7/dist/index.umd.js";
-
-  var loaded = 0;
-
-  function loadScript(src, onload) {
-    var s = document.createElement("script");
-    s.src = src;
-    s.onload = onload;
-    s.onerror = function () {
-      console.error("[RetellWidget] Failed to load: " + src);
-    };
-    document.head.appendChild(s);
-  }
-
-  function onDepLoaded() {
-    loaded++;
-    if (loaded < scripts.length) return;
-
-    // Shim globals: the Retell UMD expects lowercase names
-    window.eventemitter3 = window.EventEmitter3;
-    window.livekitClient = window.LivekitClient;
-
-    // Now load Retell SDK itself
-    loadScript(retellSrc, function () {
-      // Wait for both SDK and DOM to be ready
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", function () {
-          initWidget();
-        });
-      } else {
-        initWidget();
-      }
-    });
-  }
-
-  // Load both deps in parallel
-  for (var i = 0; i < scripts.length; i++) {
-    loadScript(scripts[i], onDepLoaded);
-  }
-})();
-
-// ── Widget core (runs after SDK is ready) ────────────────────────────
-function initWidget() {
   "use strict";
 
   // ── State ──────────────────────────────────────────────────────────
   var retellClient = null;
   var isCallActive = false;
   var isConnecting = false;
+  var sdkReady = false;
   var config = {};
 
   // ── Inline styles (all !important to survive host CSS) ──────────
@@ -85,20 +36,16 @@ function initWidget() {
     'opacity:0 !important; transform:translateY(6px) !important; ' +
     'transition:opacity 0.25s,transform 0.25s !important; pointer-events:none !important;';
 
-  // Keyframes still need a <style> tag — inject minimal one
-  function injectKeyframes() {
+  // ── DOM refs ───────────────────────────────────────────────────────
+  var fabEl, statusEl;
+
+  function createDOM() {
+    // Keyframes for animations
     var style = document.createElement("style");
     style.textContent =
       "@keyframes retell-pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.6);opacity:0}}" +
       "@keyframes retell-spin{to{transform:rotate(360deg)}}";
     document.head.appendChild(style);
-  }
-
-  // ── DOM ────────────────────────────────────────────────────────────
-  var fabEl, statusEl;
-
-  function createDOM() {
-    injectKeyframes();
 
     fabEl = document.createElement("button");
     fabEl.id = "retell-widget-fab";
@@ -137,7 +84,6 @@ function initWidget() {
     return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">' +
       '<path d="M12 2a10 10 0 0 1 10 10" style="animation:retell-spin .7s linear infinite;transform-origin:center">' +
       '</path>' +
-      '<style>@keyframes retell-spin{to{transform:rotate(360deg)}}</style>' +
       '</svg>';
   }
 
@@ -174,6 +120,33 @@ function initWidget() {
     }
   }
 
+  // ── SDK lazy loader (loads on first call, not at init) ─────────────
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error("Failed to load: " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function ensureSDK() {
+    if (sdkReady) return Promise.resolve();
+
+    return Promise.all([
+      loadScript("https://unpkg.com/eventemitter3@5.0.4/dist/eventemitter3.umd.js"),
+      loadScript("https://unpkg.com/livekit-client@2.18.1/dist/livekit-client.umd.js"),
+    ]).then(function () {
+      // Shim globals: the Retell UMD expects lowercase names
+      window.eventemitter3 = window.EventEmitter3;
+      window.livekitClient = window.LivekitClient;
+      return loadScript("https://unpkg.com/retell-client-js-sdk@2.0.7/dist/index.umd.js");
+    }).then(function () {
+      sdkReady = true;
+    });
+  }
+
   // ── Call lifecycle ─────────────────────────────────────────────────
   function startCall() {
     if (isCallActive || isConnecting) return;
@@ -185,11 +158,14 @@ function initWidget() {
       ? (config.serverUrl || "") + "/.netlify/functions/create-web-call"
       : config.serverUrl + "/api/create-web-call";
 
-    fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ agent_id: config.agentId }),
-    })
+    ensureSDK()
+      .then(function () {
+        return fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agent_id: config.agentId }),
+        });
+      })
       .then(function (res) {
         if (!res.ok) {
           return res.json().catch(function () { return {}; }).then(function (body) {
@@ -263,8 +239,8 @@ function initWidget() {
     }
   }
 
-  // ── Public API ─────────────────────────────────────────────────────
-  window.RetellWidget = {
+  // ── Public API (available synchronously on script load) ────────────
+  var RetellWidget = {
     init: function (opts) {
       if (!opts.agentId) {
         console.error("[RetellWidget] agentId is required");
@@ -275,17 +251,18 @@ function initWidget() {
         return;
       }
       config = opts;
-      createDOM();
+      // Create DOM as soon as body is available
+      if (document.body) {
+        createDOM();
+      } else {
+        document.addEventListener("DOMContentLoaded", function () {
+          createDOM();
+        });
+      }
     },
     start: startCall,
     stop: stopCall,
   };
 
-  // Check for queued config — use setTimeout to let inline scripts run first
-  setTimeout(function () {
-    if (window._retellWidgetPendingOpts) {
-      window.RetellWidget.init(window._retellWidgetPendingOpts);
-      delete window._retellWidgetPendingOpts;
-    }
-  }, 0);
-}
+  window.RetellWidget = RetellWidget;
+})();
