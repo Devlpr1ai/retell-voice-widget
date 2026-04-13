@@ -5,3 +5,10 @@
 [functions]
   node_bundler = "esbuild"
   included_files = []
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "ALLOWALL"
+    Content-Security-Policy = "frame-ancestors *"
+    Permissions-Policy = "microphone=(self)"
