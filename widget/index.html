@@ -27,22 +27,14 @@
     <p>Click the microphone button in the bottom-right corner to start a call.</p>
   </div>
 
-  <!-- Embed the widget: load deps, shim globals, then Retell SDK -->
-  <script src="/eventemitter3.umd.js"></script>
-  <script src="/livekit-client.umd.js"></script>
-  <script>
-    // The Retell UMD expects lowercase globals; the libs export capitalized names
-    window.eventemitter3 = window.EventEmitter3;
-    window.livekitClient = window.LivekitClient;
-  </script>
-  <script src="/retell-sdk.js"></script>
+  <!-- Widget loads all SDK deps dynamically — single script is all you need -->
   <script src="retell-widget.js"></script>
   <script>
-    RetellWidget.init({
-      agentId: "agent_9b19fe31c775d0e630be679b4d", // Replace with your Retell agent ID
-      useNetlify: true,         // Uses /.netlify/functions/ endpoint
-      // serverUrl: "",          // Leave empty for same-origin on Netlify
-    });
+    // Queue init config — the widget will apply it once the SDK finishes loading
+    window._retellWidgetPendingOpts = {
+      agentId: "agent_9b19fe31c775d0e630be679b4d",
+      useNetlify: true,
+    };
   </script>
 </body>
 </html>
