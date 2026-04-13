@@ -1,0 +1,24 @@
+{
+  "name": "calling_bots",
+  "version": "1.0.0",
+  "description": "Convert call script PDFs into Retell AI conversation flow agents",
+  "main": "pdf-to-retell.js",
+  "bin": {
+    "pdf-to-retell": "./pdf-to-retell.js"
+  },
+  "scripts": {
+    "start": "node pdf-to-retell.js",
+    "widget": "node web-call-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "pdf-parse": "^2.4.5",
+    "retell-sdk": "^5.12.0"
+  }
+}

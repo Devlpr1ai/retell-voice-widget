@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Agent Widget Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    .demo-container {
+      text-align: center;
+    }
+    h1 { color: #333; margin-bottom: 8px; }
+    p { color: #666; }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <h1>Voice Agent Widget Demo</h1>
+    <p>Click the microphone button in the bottom-right corner to start a call.</p>
+  </div>
+
+  <!-- Embed the widget -->
+  <script src="https://cdn.jsdelivr.net/npm/retell-client-js-sdk@2/dist/index.umd.min.js"></script>
+  <script src="retell-widget.js"></script>
+  <script>
+    RetellWidget.init({
+      agentId: "YOUR_AGENT_ID", // Replace with your Retell agent ID
+      useNetlify: true,         // Uses /.netlify/functions/ endpoint
+      // serverUrl: "",          // Leave empty for same-origin on Netlify
+    });
+  </script>
+</body>
+</html>
