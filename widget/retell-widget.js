@@ -272,8 +272,12 @@
      * @param {string} opts.agentId    — Your Retell agent ID
      */
     init: function (opts) {
-      if (!opts.serverUrl || !opts.agentId) {
-        console.error("[RetellWidget] serverUrl and agentId are required");
+      if (!opts.agentId) {
+        console.error("[RetellWidget] agentId is required");
+        return;
+      }
+      if (!opts.useNetlify && !opts.serverUrl) {
+        console.error("[RetellWidget] serverUrl is required when useNetlify is false");
         return;
       }
       config = opts;
